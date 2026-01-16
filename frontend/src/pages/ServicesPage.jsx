@@ -1,10 +1,12 @@
 // src/pages/ServicesPage.jsx
 import { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { Loader2, Briefcase, Plus, Edit, Trash2, X } from 'lucide-react';
 import api from '../services/api';
 import { normalizeService } from '../services/normalize';
 
 export default function ServicesPage() {
+  const { user } = useAuth();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -90,11 +92,18 @@ export default function ServicesPage() {
         return Number.isFinite(n) ? n : 0;
       })();
 
+      // Backend expects 'duracao_minutos' and may expect 'profissional_id'
+      const profissionalId = user?.id || user?._id || user?.user_id || undefined;
+
       const serviceData = {
         nome: formData.nome,
         preco: precoNum,
-        duracao: duracaoNum
+        duracao_minutos: duracaoNum,
+        ...(profissionalId ? { profissional_id: profissionalId } : {})
       };
+
+      // Log payload for debugging (remove in production)
+      console.log('Enviando payload de serviço:', serviceData);
 
       if (editingService) {
         // Editar serviço existente
