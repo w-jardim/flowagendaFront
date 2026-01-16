@@ -75,10 +75,25 @@ export default function ServicesPage() {
     setSaving(true);
     
     try {
+      // Garantir que campos numéricos sejam enviados como números
+      const precoNum = (() => {
+        if (formData.preco === '' || formData.preco === null || formData.preco === undefined) return 0;
+        // aceitar tanto 1.234,56 quanto 1234.56
+        const cleaned = String(formData.preco).replace(/\./g, '').replace(',', '.');
+        const n = parseFloat(cleaned);
+        return Number.isFinite(n) ? n : 0;
+      })();
+
+      const duracaoNum = (() => {
+        if (formData.duracao === '' || formData.duracao === null || formData.duracao === undefined) return 0;
+        const n = parseInt(String(formData.duracao).replace(/\D/g, ''), 10);
+        return Number.isFinite(n) ? n : 0;
+      })();
+
       const serviceData = {
         nome: formData.nome,
-        preco: parseFloat(formData.preco) || 0,
-        duracao: formData.duracao
+        preco: precoNum,
+        duracao: duracaoNum
       };
 
       if (editingService) {
