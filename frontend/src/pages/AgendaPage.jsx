@@ -18,6 +18,7 @@ import {
 import { format, addDays, subDays, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import api from '../services/api';
+import { normalizeAppointment } from '../services/normalize';
 import AppointmentModal from '../components/AppointmentModal';
 import ClientModal from '../components/ClientModal';
 
@@ -130,7 +131,8 @@ export default function AgendaPage() {
       try {
         const resp = await api.get(`/agendamentos?data=${dateStr}`);
         const data = Array.isArray(resp.data) ? resp.data : resp.data?.results ?? [];
-        setAppointments(data.map(normalizeItem));
+        const normalized = data.map(normalizeAppointment);
+        setAppointments(normalized.map(normalizeItem));
         return;
       } catch {
         // se falhar (404, 400, network já tratado), vamos para fallback
@@ -151,7 +153,8 @@ export default function AgendaPage() {
         return false;
       });
 
-      setAppointments(filtered.map(normalizeItem));
+      const normalized = filtered.map(normalizeAppointment);
+      setAppointments(normalized.map(normalizeItem));
     } catch (error) {
       console.error('Erro ao buscar agenda:', error);
       setErrorMsg('Não foi possível carregar a agenda. Verifique se o backend está rodando e o token está válido.');

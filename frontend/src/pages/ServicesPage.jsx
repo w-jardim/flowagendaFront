@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, Briefcase, Plus, Edit, Trash2, X } from 'lucide-react';
 import api from '../services/api';
+import { normalizeService } from '../services/normalize';
 
 export default function ServicesPage() {
   const [services, setServices] = useState([]);
@@ -26,7 +27,8 @@ export default function ServicesPage() {
     try {
       const resp = await api.get('/servicos');
       const data = Array.isArray(resp.data) ? resp.data : resp.data?.results ?? [];
-      setServices(data);
+      const normalized = data.map(normalizeService);
+      setServices(normalized);
     } catch (err) {
       console.error('Erro ao buscar serviços:', err);
       setErrorMsg('Não foi possível carregar os serviços. Verifique o token e se o backend está ativo.');
@@ -41,7 +43,7 @@ export default function ServicesPage() {
       setEditingService(service);
       setFormData({
         nome: service.nome || service.name || service.title || '',
-        preco: service.preco || service.price || '',
+        preco: service.preco ?? service.price ?? '',
         duracao: (() => {
           const duracao = service.duracao || service.duration || service.duracao_minutos || service.durationMinutes;
           return duracao && String(duracao).trim() !== '' ? String(duracao) : '';
@@ -167,7 +169,7 @@ export default function ServicesPage() {
                   })()
                 }
               </div>
-              <div className="mt-3 text-sm text-indigo-600 font-bold">{s.preco ? `R$ ${s.preco}` : ''}</div>
+              <div className="mt-3 text-sm text-indigo-600 font-bold">{s.preco ? `R$ ${s.precoFormatted}` : ''}</div>
             </div>
           ))}
         </div>

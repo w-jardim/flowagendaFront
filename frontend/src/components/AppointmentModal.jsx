@@ -4,6 +4,7 @@ import { X, Calendar, Clock, User, MessageCircle, Plus } from 'lucide-react';
 import { parseISO } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import api from '../services/api';
+import { normalizeService, normalizeClient, normalizeAppointment } from '../services/normalize';
 
 export default function AppointmentModal({ isOpen, onClose, appointment, onSuccess, onOpenClientModal }) {
   const [formData, setFormData] = useState({
@@ -25,8 +26,9 @@ export default function AppointmentModal({ isOpen, onClose, appointment, onSucce
       fetchServices();
       fetchClients();
       if (appointment) {
-        // Modo edição - preencher dados
-        populateForm(appointment);
+        // Modo edição - preencher dados com objeto normalizado
+        const normalized = normalizeAppointment(appointment);
+        populateForm(normalized);
       } else {
         // Modo criação - limpar form
         resetForm();
@@ -38,7 +40,7 @@ export default function AppointmentModal({ isOpen, onClose, appointment, onSucce
     try {
       const resp = await api.get('/servicos');
       const data = Array.isArray(resp.data) ? resp.data : resp.data?.results ?? [];
-      setServices(data);
+      setServices(data.map(normalizeService));
     } catch (error) {
       console.error('Erro ao carregar serviços:', error);
     }
@@ -48,7 +50,7 @@ export default function AppointmentModal({ isOpen, onClose, appointment, onSucce
     try {
       const resp = await api.get('/clientes');
       const data = Array.isArray(resp.data) ? resp.data : resp.data?.results ?? [];
-      setClients(data);
+      setClients(data.map(normalizeClient));
     } catch (error) {
       console.error('Erro ao carregar clientes:', error);
     }
@@ -223,7 +225,7 @@ export default function AppointmentModal({ isOpen, onClose, appointment, onSucce
               <option value="">Selecione um serviço</option>
               {services.map(service => (
                 <option key={service.id || service._id} value={service.id || service._id}>
-                  {service.nome || service.name} - R$ {service.preco || service.price}
+                  {service.nome || service.name} - R$ {service.precoFormatted || service.preco || ''}
                   {service.duracao || service.duration ? ` (${service.duracao || service.duration}min)` : ''}
                 </option>
               ))}

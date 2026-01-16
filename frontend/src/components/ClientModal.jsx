@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { X, User, Phone, Mail, Loader2, CreditCard, MapPin } from 'lucide-react';
 import api from '../services/api';
+import { normalizeClient, prepareWhatsappForSend } from '../services/normalize';
 
 export default function ClientModal({ isOpen, onClose, onSuccess, clientToEdit }) {
   const [formData, setFormData] = useState({
@@ -17,19 +18,15 @@ export default function ClientModal({ isOpen, onClose, onSuccess, clientToEdit }
   useEffect(() => {
     if (isOpen) {
       if (clientToEdit) {
-        // Modo edição - popular dados do cliente com máscaras aplicadas
-        // Prioriza `whatsapp` (API) e também aceita `telefone`, além de suportar `address` como fallback
-        let incomingPhone = clientToEdit.whatsapp || clientToEdit.telefone || clientToEdit.phone || '';
-        if (typeof incomingPhone === 'string' && incomingPhone.startsWith('55')) {
-          incomingPhone = incomingPhone.slice(2); // remove código do país ao popular o form
-        }
-
+        // Modo edição - normalizar o objeto e popular fields
+        const client = normalizeClient(clientToEdit);
+        // client.telefoneDigits contém apenas números sem country code
         setFormData({
-          nome: clientToEdit.nome || '',
-          telefone: formatPhone(incomingPhone || ''),
-          email: clientToEdit.email || '',
-          cpf: formatCPF(clientToEdit.cpf || ''),
-          endereco: clientToEdit.endereco || clientToEdit.address || ''
+          nome: client.nome || '',
+          telefone: formatPhone(client.telefoneDigits || ''),
+          email: client.email || '',
+          cpf: formatCPF(client.cpf || ''),
+          endereco: client.endereco || ''
         });
       } else {
         // Modo criação - limpar form
@@ -106,16 +103,11 @@ export default function ClientModal({ isOpen, onClose, onSuccess, clientToEdit }
     try {
       const dadosParaEnviar = {
         nome: formData.nome.trim(),
-        whatsapp: formData.telefone.replace(/\D/g, ''), // Remove tudo que não for número
+        whatsapp: prepareWhatsappForSend(formData.telefone),
         email: formData.email.trim() || undefined,
         cpf: cleanCPF(formData.cpf) || undefined,
         endereco: formData.endereco.trim() || undefined
       };
-
-      // Adiciona código do país se necessário
-      if (!dadosParaEnviar.whatsapp.startsWith('55')) {
-        dadosParaEnviar.whatsapp = `55${dadosParaEnviar.whatsapp}`;
-      }
 
       if (clientToEdit) {
         // Editar cliente existente

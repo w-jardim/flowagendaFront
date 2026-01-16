@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import ClientModal from '../components/ClientModal';
+import { normalizeClient } from '../services/normalize';
 
 export default function ClientsPage() {
   const [clients, setClients] = useState([]);
@@ -31,7 +32,8 @@ export default function ClientsPage() {
     try {
       const resp = await api.get('/clientes');
       const data = Array.isArray(resp.data) ? resp.data : resp.data?.results ?? [];
-      setClients(data);
+      const normalized = data.map(normalizeClient);
+      setClients(normalized);
     } catch (error) {
       console.error('Erro ao carregar clientes:', error);
       alert('Erro ao carregar clientes. Verifique se o backend está rodando.');
