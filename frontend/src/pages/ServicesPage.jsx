@@ -92,8 +92,14 @@ export default function ServicesPage() {
         return Number.isFinite(n) ? n : 0;
       })();
 
-      // Backend expects 'duracao_minutos' and may expect 'profissional_id'
-      const profissionalId = user?.id || user?._id || user?.user_id || undefined;
+      // Backend expects 'duracao_minutos' (number) and requires a valid 'profissional_id' (UUID)
+      function isUUID(v) {
+        if (!v) return false;
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(v));
+      }
+
+      const possibleIds = [user?.id, user?._id, user?.user_id, user?.uuid, user?.profissional_id];
+      const profissionalId = possibleIds.find(x => isUUID(x));
 
       const serviceData = {
         nome: formData.nome,

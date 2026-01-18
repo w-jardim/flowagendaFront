@@ -1,7 +1,7 @@
 // src/App.jsx
 import { BrowserRouter, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { useState } from 'react';
-import { Loader2, Calendar, LogOut, LayoutDashboard, Users, Briefcase } from 'lucide-react';
+import { Loader2, Calendar, LogOut, LayoutDashboard, Users, Briefcase, TrendingUp } from 'lucide-react';
 import { useAuth } from './contexts/AuthContext';
 //paginas
 import AgendaPage from './pages/AgendaPage';
@@ -9,6 +9,9 @@ import ServicesPage from './pages/ServicesPage';
 import DashboardPage from './pages/DashboardPage';
 import ClientsPage from './pages/ClientsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminLogsPage from './pages/AdminLogsPage';
+import AdminMetrics from './pages/AdminMetrics';
 
 // RequireAdmin wrapper: if user is not admin, redirect to / with alert
 function RequireAdmin({ children }) {
@@ -34,8 +37,14 @@ function LoginPage() {
     setError('');
     
     try {
-      await signIn({ email, password });
-      // Se chegar aqui, o AuthContext vai mudar o estado 'signed' e o App vai trocar a tela
+      const loggedUser = await signIn({ email, password });
+      // Redirecionamento pós-login conforme role
+      const role = loggedUser?.role ? String(loggedUser.role).toUpperCase() : '';
+      if (role === 'ADMIN' || role === 'ADMINISTRADOR') {
+        window.location.href = '/admin';
+      } else {
+        window.location.href = '/dashboard';
+      }
     } catch (err) {
       console.error("Erro no componente de login:", err);
       setError('Usuário ou senha incorretos ou erro de conexão');
@@ -110,7 +119,7 @@ function MainLayout({ children }) {
     menuItems = [
       { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
       { path: '/admin/usuarios', label: 'Gestão de Profissionais', icon: <Users size={20} /> },
-      { path: '/admin/metrics', label: 'Métricas', icon: <TrendingUp size={20} /> },
+      { path: '/admin/metricas', label: 'Métricas', icon: <TrendingUp size={20} /> },
       { path: '/admin/config', label: 'Configurações', icon: <LayoutDashboard size={20} /> },
     ];
   } else {
@@ -168,6 +177,13 @@ function MainLayout({ children }) {
   );
 }
 
+function DashboardRouter() {
+  const { user } = useAuth();
+  const role = (user && user.role) ? String(user.role).toUpperCase() : '';
+  if (role === 'ADMIN' || role === 'ADMINISTRADOR') return <AdminDashboard />;
+  return <DashboardPage />;
+}
+
 export default function App() {
   const { signed, loading } = useAuth();
 
@@ -187,13 +203,17 @@ export default function App() {
     <BrowserRouter>
       <MainLayout>
         <Routes>
-          <Route path="/" element={<DashboardPage />} />
+          <Route path="/dashboard" element={<DashboardRouter />} />
+          <Route path="/" element={<DashboardRouter />} />
           <Route path="/servicos" element={<ServicesPage />} />
           <Route path="/agenda" element={<AgendaPage />} />
           <Route path="/clientes" element={<ClientsPage />} />
 
           {/* Admin routes */}
+          <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
           <Route path="/admin/usuarios" element={<RequireAdmin><AdminUsersPage /></RequireAdmin>} />
+          <Route path="/admin/metricas" element={<RequireAdmin><AdminMetrics /></RequireAdmin>} />
+          <Route path="/admin/logs" element={<RequireAdmin><AdminLogsPage /></RequireAdmin>} />
 
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

@@ -4,7 +4,7 @@ import { X, Calendar, Clock, User, MessageCircle, Plus } from 'lucide-react';
 import { parseISO } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import api from '../services/api';
-import { normalizeService, normalizeClient, normalizeAppointment } from '../services/normalize';
+import { normalizeService, normalizeClient, normalizeAppointment, stripNonDigits } from '../services/normalize';
 
 export default function AppointmentModal({ isOpen, onClose, appointment, onSuccess, onOpenClientModal }) {
   const [formData, setFormData] = useState({
@@ -142,6 +142,20 @@ export default function AppointmentModal({ isOpen, onClose, appointment, onSucce
   if (!isOpen) return null;
 
   const selectedService = getSelectedService();
+  const selectedClientForPhone = clients.find(c => c.id === formData.cliente_id || c._id === formData.cliente_id);
+
+  function formatWhatsappDisplay(rawWhatsapp) {
+    if (!rawWhatsapp) return '';
+    const digits = stripNonDigits(rawWhatsapp || '');
+    const d = digits.startsWith('55') ? digits.slice(2) : digits;
+    if (!d) return '';
+    if (d.length <= 2) return d;
+    if (d.length <= 6) return `(${d.slice(0,2)}) ${d.slice(2)}`;
+    if (d.length <= 10) return `(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`;
+    return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7,11)}`;
+  }
+
+  const formattedClientPhone = selectedClientForPhone ? formatWhatsappDisplay(selectedClientForPhone.whatsapp) : '';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -165,7 +179,7 @@ export default function AppointmentModal({ isOpen, onClose, appointment, onSucce
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Cliente <span className="text-red-500">*</span>
               </label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <select
                   required
                   value={formData.cliente_id}
@@ -177,24 +191,27 @@ export default function AppointmentModal({ isOpen, onClose, appointment, onSucce
                       cliente_nome: selectedClient ? selectedClient.nome : formData.cliente_nome
                     });
                   }}
-                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="flex-1 min-w-0 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 >
                   <option value="">Selecione um cliente</option>
                   {clients.map(client => (
                     <option key={client.id} value={client.id}>
-                      {client.nome} {client.telefone ? `(${client.telefone})` : ''}
+                      {client.nome}
                     </option>
                   ))}
                 </select>
                 <button
                   type="button"
                   onClick={onOpenClientModal}
-                  className="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  className="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex-shrink-0"
                   title="Cadastrar novo cliente"
                 >
                   <Plus size={20} />
                 </button>
               </div>
+              {formattedClientPhone && (
+                <p className="text-sm text-slate-500 mt-1">{formattedClientPhone}</p>
+              )}
             </div>
 
             <div>

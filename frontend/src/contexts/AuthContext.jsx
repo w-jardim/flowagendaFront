@@ -59,15 +59,18 @@ export function AuthProvider({ children }) {
         userData.role = decoded.roles[0];
       }
 
+      // Ensure we have an id on userData (try common fields and token subject)
+      userData.id = userData.id || userData._id || userData.user_id || decoded?.sub || decoded?.id || decoded?.user_id || null;
+
       localStorage.setItem('@FlowAgenda:token', token);
       localStorage.setItem('@FlowAgenda:user', JSON.stringify(userData));
 
       api.defaults.headers.common.Authorization = `Bearer ${token}`;
 
       setUser(userData);
-      
       console.log('[Auth] Login concluído com sucesso!');
       setLoading(false);
+      return userData;
     } catch (error) {
       console.error('[Auth] Erro no processo de login:', error);
       setLoading(false);
